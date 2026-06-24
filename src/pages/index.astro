@@ -6,6 +6,8 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
 import bgVideo from '../assets/bg.mp4';
 
+const base = import.meta.env.BASE_URL;
+
 const allPosts = await getCollection('blog');
 const posts = allPosts
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
@@ -85,7 +87,7 @@ function getTagColor(name: string): { bg: string; text: string } {
           <div class="section-header">
             <p class="section-label">Latest Posts</p>
             <h2>最新文章</h2>
-            <a class="view-all" href="/blog/">查看全部 →</a>
+            <a class="view-all" href={`${base}blog/`}>查看全部 →</a>
           </div>
 
           <div class="post-grid">
@@ -137,7 +139,7 @@ function getTagColor(name: string): { bg: string; text: string } {
               <span class="sidebar-icon">📞</span>
               <a href="tel:15396760829">15396760829</a>
             </div>
-            <a class="sidebar-link" href="/blog/">了解更多 →</a>
+            <a class="sidebar-link" href={`${base}blog/`}>了解更多 →</a>
           </div>
 
           <div class="sidebar-card">
@@ -189,10 +191,10 @@ function getTagColor(name: string): { bg: string; text: string } {
     position: relative;
     z-index: 6;
     height: calc(100vh - 64px);
-    min-height: 560px;
+    min-height: 400px;
     display: grid;
     place-items: center;
-    overflow: hidden;
+    overflow: visible;
     background: #111827;
   }
 
@@ -230,7 +232,7 @@ function getTagColor(name: string): { bg: string; text: string } {
     top: -4vh;
   }
 
-  .hero h2 {
+  .hero h3 {
     margin: 0;
     font-size: clamp(52px, 8vw, 96px);
     line-height: 1;
@@ -264,7 +266,7 @@ function getTagColor(name: string): { bg: string; text: string } {
     position: relative;
     z-index: 5;
     width: min(1100px, calc(100% - 48px));
-    margin: 0 auto 88px;
+    margin: 64px auto 88px;
   }
 
   /* ── Two-column grid ────────────────────────────── */
