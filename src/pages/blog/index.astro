@@ -1,114 +1,302 @@
 ---
-import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
-import Footer from '../../components/Footer.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
 const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+	(a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
 );
+
+// Extract unique categories
+const categories = [...new Set(posts.map((p) => p.data.category))].sort();
+
+const formatDate = (date: Date) =>
+	new Intl.DateTimeFormat('zh-CN', {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+	}).format(date);
+
+// Deterministic color picker for tags
+const tagColors = [
+	{ bg: '#dbeafe', text: '#1d4ed8' },
+	{ bg: '#dcfce7', text: '#15803d' },
+	{ bg: '#fef3c7', text: '#b45309' },
+	{ bg: '#f3e8ff', text: '#7e22ce' },
+	{ bg: '#ffe4e6', text: '#be123c' },
+	{ bg: '#ccfbf1', text: '#0f766e' },
+	{ bg: '#fef9c3', text: '#a16207' },
+	{ bg: '#e0e7ff', text: '#3730a3' },
+];
+
+function getTagColor(name: string): { bg: string; text: string } {
+	let hash = 0;
+	for (let i = 0; i < name.length; i++) {
+		hash = name.charCodeAt(i) + ((hash << 5) - hash);
+	}
+	return tagColors[Math.abs(hash) % tagColors.length];
+}
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<BaseHead title={`博客 - ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
 		<style>
-			main {
-				width: 960px;
+			:global(body) {
+				margin: 0;
+				background: #eef7ff;
 			}
-			ul {
+
+			.blog-page {
+				width: min(1100px, calc(100% - 48px));
+				margin: 0 auto 88px;
+			}
+
+			/* ── Category tabs ────────────────────────────── */
+
+			.category-bar {
 				display: flex;
 				flex-wrap: wrap;
-				gap: 2rem;
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
+				gap: 8px;
+				margin-bottom: 20px;
+				padding: 16px 0;
 			}
-			ul li {
-				width: calc(50% - 1rem);
+
+			.cat-tab {
+				padding: 6px 18px;
+				border-radius: 999px;
+				border: none;
+				cursor: pointer;
+				font-size: 14px;
+				font-weight: 700;
+				background: rgba(255, 255, 255, 0.7);
+				color: #6b7280;
+				transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 			}
-			ul li * {
-				text-decoration: none;
-				transition: 0.2s ease;
+
+			.cat-tab:hover {
+				background: rgba(255, 255, 255, 0.95);
+				color: #111827;
 			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
+
+			.cat-tab.active {
+				background: #111827;
+				color: #fff;
+				box-shadow: 0 4px 14px rgba(17, 24, 39, 0.25);
 			}
-			ul li:first-child img {
-				width: 100%;
+
+			/* ── Post grid ────────────────────────────── */
+
+			.post-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 10px;
 			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
+
+			.post-card {
 				border-radius: 12px;
+				background: rgba(255, 255, 255, 0.88);
+				backdrop-filter: blur(16px);
+				box-shadow: 0 18px 42px rgba(31, 41, 55, 0.12);
+				transition: box-shadow 0.2s ease, transform 0.2s ease;
+				overflow: hidden;
 			}
-			ul li a {
-				display: block;
+
+			.post-card:hover {
+				box-shadow: 0 4px 20px rgba(31, 41, 55, 0.15);
+				transform: translateY(-2px);
 			}
-			.title {
+
+			.post-card-link {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				text-decoration: none;
+				padding: 12px 16px;
+				color: inherit;
+			}
+
+			.card-body {
+				flex: 1;
+				min-width: 0;
+			}
+
+			.card-top {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin-bottom: 6px;
+			}
+
+			.card-category {
+				display: inline-block;
+				padding: 2px 10px;
+				border-radius: 999px;
+				background: #dbeafe;
+				color: #1d4ed8;
+				font-size: 11px;
+				font-weight: 700;
+			}
+
+			.card-title {
+				margin: 0 0 4px;
+				font-size: 15px;
+				font-weight: 800;
+				color: #111827;
+				line-height: 1.4;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+
+			.post-card:hover .card-title {
+				color: #0969da;
+			}
+
+			.card-desc {
 				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
+				color: #6b7280;
+				font-size: 13px;
+				line-height: 1.5;
+				display: -webkit-box;
+				-webkit-line-clamp: 1;
+				-webkit-box-orient: vertical;
+				overflow: hidden;
 			}
-			.date {
-				margin: 0;
-				color: rgb(var(--gray));
+
+			.card-meta {
+				flex-shrink: 0;
+				display: flex;
+				flex-direction: column;
+				align-items: flex-end;
+				gap: 6px;
 			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
+
+			.card-date {
+				color: #9ca3af;
+				font-size: 12px;
+				font-weight: 600;
+				white-space: nowrap;
 			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
+
+			.card-tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 4px;
+				justify-content: flex-end;
 			}
-			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
+
+			.tag {
+				padding: 2px 8px;
+				border-radius: 999px;
+				font-size: 11px;
+				font-weight: 700;
+				line-height: 1.5;
+			}
+
+			.empty-state {
+				grid-column: 1 / -1;
+				text-align: center;
+				padding: 60px 20px;
+				color: #9ca3af;
+				font-size: 15px;
+			}
+
+			/* ── Mobile ────────────────────────────── */
+
+			@media (max-width: 760px) {
+				.blog-page {
+					width: min(100% - 28px, 1100px);
 				}
-				ul li {
-					width: 100%;
-					text-align: center;
+
+				.post-grid {
+					grid-template-columns: 1fr;
 				}
-				ul li:first-child {
-					margin-bottom: 0;
+
+				.category-bar {
+					gap: 6px;
+					margin-bottom: 14px;
 				}
-				ul li:first-child .title {
-					font-size: 1.563em;
+
+				.cat-tab {
+					padding: 5px 14px;
+					font-size: 13px;
+				}
+
+				.card-title {
+					font-size: 15px;
 				}
 			}
 		</style>
 	</head>
 	<body>
 		<Header />
-		<main>
-			<section>
-				<ul>
-					{
-						posts.map((post) => (
-							<li>
-								<a href={`/blog/${post.id}/`}>
-									{post.data.heroImage && (
-										<Image width={720} height={360} src={post.data.heroImage} alt="" />
-									)}
-									<h4 class="title">{post.data.title}</h4>
-									<p class="date">
-										<FormattedDate date={post.data.pubDate} />
-									</p>
-								</a>
-							</li>
-						))
-					}
-				</ul>
-			</section>
+		<main class="blog-page">
+			<div class="category-bar">
+				<button class="cat-tab active" data-cat="all">全部</button>
+				{categories.map((cat) => (
+					<button class="cat-tab" data-cat={cat}>{cat}</button>
+				))}
+			</div>
+
+			<div class="post-grid">
+				{posts.map((post) => (
+					<article class="post-card" data-category={post.data.category}>
+						<a class="post-card-link" href={`/blog/${post.id}/`}>
+							<div class="card-body">
+								<div class="card-top">
+									<span class="card-category">{post.data.category}</span>
+								</div>
+								<h3 class="card-title">{post.data.title}</h3>
+								<p class="card-desc">{post.data.description}</p>
+							</div>
+							<div class="card-meta">
+								<span class="card-date">{formatDate(post.data.pubDate)}</span>
+								{post.data.tags && post.data.tags.length > 0 && (
+									<div class="card-tags">
+										{post.data.tags.map((tag) => {
+											const color = getTagColor(tag);
+											return (
+												<span class="tag" style={{ background: color.bg, color: color.text }}>
+													{tag}
+												</span>
+											);
+										})}
+									</div>
+								)}
+							</div>
+						</a>
+					</article>
+				))}
+			</div>
 		</main>
-		<Footer />
+
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				const tabs = document.querySelectorAll<HTMLButtonElement>('.cat-tab');
+				const cards = document.querySelectorAll<HTMLElement>('.post-card');
+
+				tabs.forEach((tab) => {
+					tab.addEventListener('click', () => {
+						// Update active tab
+						tabs.forEach((t) => t.classList.remove('active'));
+						tab.classList.add('active');
+
+						const cat = tab.dataset.cat;
+
+						// Filter cards
+						cards.forEach((card) => {
+							if (cat === 'all' || card.dataset.category === cat) {
+								card.style.display = '';
+							} else {
+								card.style.display = 'none';
+							}
+						});
+					});
+				});
+			});
+		</script>
 	</body>
 </html>

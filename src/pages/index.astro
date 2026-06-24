@@ -1,49 +1,565 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+import bgVideo from '../assets/bg.mp4';
+
+const allPosts = await getCollection('blog');
+const posts = allPosts
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 5)
+  .map((post) => ({
+    id: post.id,
+    title: post.data.title,
+    description: post.data.description,
+    pubDate: post.data.pubDate,
+    tags: post.data.tags ?? [],
+    url: `/blog/${post.id}/`,
+  }));
+
+const totalPosts = allPosts.length;
+const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags ?? []))].sort();
+const latestDate = allPosts.length > 0
+  ? new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(
+      allPosts[0].data.pubDate,
+    )
+  : '—';
+
+const formatDate = (date: Date) =>
+  new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+
+// Deterministic color picker — same tag always gets the same color
+const tagColors = [
+  { bg: '#dbeafe', text: '#1d4ed8' },  // blue
+  { bg: '#dcfce7', text: '#15803d' },  // green
+  { bg: '#fef3c7', text: '#b45309' },  // amber
+  { bg: '#f3e8ff', text: '#7e22ce' },  // purple
+  { bg: '#ffe4e6', text: '#be123c' },  // pink
+  { bg: '#ccfbf1', text: '#0f766e' },  // teal
+  { bg: '#fef9c3', text: '#a16207' },  // yellow
+  { bg: '#e0e7ff', text: '#3730a3' },  // indigo
+];
+
+function getTagColor(name: string): { bg: string; text: string } {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return tagColors[Math.abs(hash) % tagColors.length];
+}
 ---
 
 <!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
-		</main>
-		<Footer />
-	</body>
+<html lang="zh-CN">
+  <head>
+    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+  </head>
+
+  <body>
+    <Header />
+
+    <section class="hero">
+      <video class="hero-video" autoplay muted loop playsinline preload="auto" disablepictureinpicture controlslist="nodownload noremoteplayback noplaybackrate">
+        <source src={bgVideo} type="video/mp4" />
+      </video>
+
+      <div class="hero-overlay"></div>
+
+      <div class="hero-content">
+        <h3>Kevin的个人空间</h3>
+        <p>记录学习、项目、科研与技术思考</p>
+      </div>
+
+      <a class="scroll-down" href="#latest" aria-label="向下滚动">⌄</a>
+    </section>
+
+    <main id="latest" class="page">
+      <div class="content-grid">
+        <section class="latest-section">
+          <div class="section-header">
+            <p class="section-label">Latest Posts</p>
+            <h2>最新文章</h2>
+            <a class="view-all" href="/blog/">查看全部 →</a>
+          </div>
+
+          <div class="post-grid">
+            {posts.map((post) => (
+              <article class="post-card">
+                <a class="post-card-link" href={post.url}>
+                  <div class="post-row">
+                    <div class="post-info">
+                      <h3>{post.title}</h3>
+                      <p class="post-desc">{post.description}</p>
+                      {post.tags.length > 0 && (
+                        <div class="post-tags">
+                          {post.tags.map((tag) => {
+                            const color = getTagColor(tag);
+                            return (
+                              <span class="tag" style={{ background: color.bg, color: color.text }}>
+                                {tag}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <div class="post-meta">
+                      <time>{formatDate(post.pubDate)}</time>
+                      <span class="read-link">阅读 →</span>
+                    </div>
+                  </div>
+                </a>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <aside class="sidebar">
+          <div class="sidebar-card">
+            <div class="sidebar-card-header">
+              <span class="sidebar-icon">👤</span>
+              <h3>关于</h3>
+            </div>
+            <p class="sidebar-text">
+              你好，我是 Kevin，苏州科技大学 · 电子与信息工程学院计算机技术硕士，研究方向：自然语言处理、多重聚类。
+            </p>
+            <div class="sidebar-contact">
+              <span class="sidebar-icon">📧</span>
+              <a href="mailto:2384192478@qq.com">2384192478@qq.com</a>
+            </div>
+            <div class="sidebar-contact">
+              <span class="sidebar-icon">📞</span>
+              <a href="tel:15396760829">15396760829</a>
+            </div>
+            <a class="sidebar-link" href="/blog/">了解更多 →</a>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="sidebar-card-header">
+              <span class="sidebar-icon">📊</span>
+              <h3>文章统计</h3>
+            </div>
+            <div class="stats-list">
+              <div class="stat-row">
+                <span class="stat-label">文章总数</span>
+                <span class="stat-value">{totalPosts}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">标签数量</span>
+                <span class="stat-value">{allTags.length}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">最近更新</span>
+                <span class="stat-value">{latestDate}</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </body>
 </html>
+
+<style>
+  :global(html) {
+    scroll-behavior: smooth;
+  }
+
+  :global(body) {
+    margin: 0;
+    background: #eef7ff;
+  }
+
+  /* ── Hero ────────────────────────────── */
+
+  .hero {
+    position: relative;
+    z-index: 6;
+    height: calc(100vh - 64px);
+    min-height: 560px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #111827;
+  }
+
+  .hero-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.32);
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 150px;
+    background: linear-gradient(to bottom, transparent, #eef7ff);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    top: -4vh;
+  }
+
+  .hero h2 {
+    margin: 0;
+    font-size: clamp(52px, 8vw, 96px);
+    line-height: 1;
+  }
+
+  .hero-content p:last-child {
+    margin: 22px 0 0;
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .scroll-down {
+    position: absolute;
+    z-index: 3;
+    bottom: 44px;
+    color: #fff;
+    font-size: 56px;
+    line-height: 1;
+    text-decoration: none;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+  }
+
+  /* ── Page ────────────────────────────── */
+
+  .page {
+    position: relative;
+    z-index: 5;
+    width: min(1100px, calc(100% - 48px));
+    margin: 0 auto 88px;
+  }
+
+  /* ── Two-column grid ────────────────────────────── */
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── Section shell ────────────────────────────── */
+
+  .latest-section {
+    padding: 24px 28px 28px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 18px 42px rgba(31, 41, 55, 0.12);
+    backdrop-filter: blur(16px);
+  }
+
+  .section-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    align-items: baseline;
+    margin-bottom: 18px;
+  }
+
+  .section-label {
+    margin: 0;
+    color: #0969da;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .section-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: #111827;
+  }
+
+  .view-all {
+    margin-left: auto;
+    color: #0969da;
+    font-weight: 700;
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .view-all:hover {
+    text-decoration: underline;
+  }
+
+  /* ── Post grid ────────────────────────────── */
+
+  .post-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  /* ── Card ────────────────────────────── */
+
+  .post-card {
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(31, 41, 55, 0.06), 0 1px 2px rgba(31, 41, 55, 0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .post-card:hover {
+    box-shadow: 0 4px 14px rgba(31, 41, 55, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .post-card-link {
+    text-decoration: none;
+    display: block;
+    padding: 14px 18px;
+  }
+
+  /* ── Row: left content + right meta ────────────── */
+
+  .post-row {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  .post-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .post-info h3 {
+    margin: 0;
+    color: #111827;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .post-card-link:hover .post-info h3 {
+    color: #0969da;
+  }
+
+  .post-desc {
+    margin: 5px 0 0;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .tag {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  /* ── Right meta ────────────────────────────── */
+
+  .post-meta {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    padding-top: 2px;
+  }
+
+  .post-meta time {
+    color: #9ca3af;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .read-link {
+    color: #0969da;
+    font-size: 12px;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .post-card:hover .read-link {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* ── Sidebar ────────────────────────────── */
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .sidebar-card {
+    padding: 20px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 18px 42px rgba(31, 41, 55, 0.12);
+    backdrop-filter: blur(16px);
+  }
+
+  .sidebar-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .sidebar-card-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: #111827;
+  }
+
+  .sidebar-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .sidebar-text {
+    margin: 0 0 10px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #4b5563;
+  }
+
+  .sidebar-link {
+    color: #0969da;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .sidebar-link:hover {
+    text-decoration: underline;
+  }
+
+  .sidebar-contact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .sidebar-contact a {
+    color: #0969da;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .sidebar-contact a:hover {
+    text-decoration: underline;
+  }
+
+  .stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #f3f4f6;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .stat-value {
+    font-size: 14px;
+    font-weight: 800;
+    color: #111827;
+  }
+
+  /* ── Mobile ────────────────────────────── */
+
+  @media (max-width: 760px) {
+    .hero {
+      min-height: 520px;
+    }
+
+    .page {
+      width: min(100% - 28px, 1100px);
+    }
+
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .latest-section {
+      padding: 16px;
+      border-radius: 10px;
+    }
+
+    .section-header h2 {
+      font-size: 18px;
+    }
+
+    .post-card-link {
+      padding: 12px 14px;
+    }
+
+    .post-meta {
+      display: none;
+    }
+
+    .post-info h3 {
+      font-size: 14px;
+    }
+
+    .post-desc {
+      font-size: 12px;
+    }
+  }
+</style>

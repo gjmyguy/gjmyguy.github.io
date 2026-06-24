@@ -1,0 +1,390 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+
+// ═══════════════════════════════════════════════════════
+//  📝 在这里添加你的论文和竞赛数据
+// ═══════════════════════════════════════════════════════
+
+const papers: {
+  title: string;
+  authors: string;
+  journal: string;
+  level: string;
+  impactFactor?: number;
+  link?: string;
+  yearMonth: string; // 格式 '2025-05'
+}[] = [
+  {
+    title: '基于小规模异构语言模型一致性委员会的数据剪枝方法',
+    authors: '王凯文, 王蕴哲, 谈威, 傅启明, 陆悠, 陈建平',
+    journal: '计算机应用研究',
+    level: 'CCF-C、北大核心',
+    impactFactor: 1.685,
+    link: 'https://www.arocmag.cn/abs/2025.05.0139',
+    yearMonth: '2025-07',
+  },
+  {
+    title: 'VRQA: Context-adaptive view routing for long-document question–answer generation',
+    authors: 'Mengting Huang, Jianping Chen, Kaiwen Wang, Hongjie Wu, Fuyuan Hu, Lanhui Liu, Qiming Fu',
+    journal: 'Expert Systems with Applications',
+    level: 'CCF-C、中科院一区TOP',
+    impactFactor: 9.4,
+    link: 'https://www.sciencedirect.com/science/article/abs/pii/S0957417426015265',
+    yearMonth: '2026-04',
+  },
+];
+
+const competitions: {
+  name: string;
+  project: string;
+  level: string;
+  yearMonth: string; // 格式 '2024-11'
+}[] = [
+  {
+    name: '“华为杯”第二十一届中国研究生数学建模竞赛',
+    project: '高速公路应急车道紧急启用模型',
+    level: '全国三等奖',
+    yearMonth: '2024-11',
+  },
+  {
+    name: '第一届中国研究生智能建造创新大赛',
+    project: '智建索引',
+    level: '全国二等奖',
+    yearMonth: '2025-11',
+  },
+];
+
+// ═══════════════════════════════════════════════════════
+
+// Merge papers + competitions into a unified timeline, grouped by year
+type TimelineItem =
+  | { type: 'paper'; data: (typeof papers)[number] }
+  | { type: 'competition'; data: (typeof competitions)[number] };
+
+const allItems: TimelineItem[] = [
+  ...papers.map((p) => ({ type: 'paper' as const, data: p })),
+  ...competitions.map((c) => ({ type: 'competition' as const, data: c })),
+].sort((a, b) => b.data.yearMonth.localeCompare(a.data.yearMonth));
+
+// Group by yearMonth
+const ymGroups = new Map<string, TimelineItem[]>();
+for (const item of allItems) {
+  const ym = item.data.yearMonth;
+  if (!ymGroups.has(ym)) ymGroups.set(ym, []);
+  ymGroups.get(ym)!.push(item);
+}
+const yearMonths = [...ymGroups.keys()].sort((a, b) => b.localeCompare(a));
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <BaseHead title={`科研 - ${SITE_TITLE}`} description="学术论文与竞赛成果" />
+  </head>
+  <body>
+    <Header />
+    <main class="research-page">
+      <div class="page-header">
+        <h1>科研成果</h1>
+        <p class="page-subtitle">论文发表与学科竞赛</p>
+      </div>
+
+      {allItems.length === 0 ? (
+        <div class="empty-state">
+          <p>暂无数据，请在页面源码中添加论文或竞赛信息。</p>
+        </div>
+      ) : (
+        <div class="timeline">
+          {yearMonths.map((ym) => (
+            <div class="timeline-ym">
+              <div class="ym-marker">
+                <span class="ym-dot"></span>
+                <span class="ym-label">{ym.replace('-', '年')}月</span>
+              </div>
+              <div class="ym-items">
+                {ymGroups.get(ym)!.map((item) =>
+                  item.type === 'paper' ? (
+                    <div class="card paper-card">
+                      <div class="card-icon">📄</div>
+                      <div class="card-body">
+                        <h3 class="card-title">
+                          {item.data.link ? (
+                            <a href={item.data.link} target="_blank" rel="noreferrer">{item.data.title}</a>
+                          ) : (
+                            item.data.title
+                          )}
+                        </h3>
+                        <p class="card-authors">{item.data.authors}</p>
+                        <div class="card-meta">
+                          <span class="meta-tag journal">{item.data.journal}</span>
+                          <span class="meta-tag level">{item.data.level}</span>
+                          {item.data.impactFactor && (
+                            <span class="meta-tag if">IF: {item.data.impactFactor}</span>
+                          )}
+                          {item.data.link && (
+                            <a class="meta-tag link-tag" href={item.data.link} target="_blank" rel="noreferrer">🔗 论文链接</a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div class="card comp-card">
+                      <div class="card-icon">🏆</div>
+                      <div class="card-body">
+                        <h3 class="card-title">{item.data.name}</h3>
+                        <p class="card-project">{item.data.project}</p>
+                        <div class="card-meta">
+                          <span class="meta-tag comp-level">{item.data.level}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </main>
+  </body>
+</html>
+
+<style>
+  :global(body) {
+    margin: 0;
+    background: #eef7ff;
+  }
+
+  .research-page {
+    width: min(820px, calc(100% - 48px));
+    margin: 0 auto 88px;
+  }
+
+  .page-header {
+    padding: 32px 0 8px;
+  }
+
+  .page-header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 900;
+    color: #111827;
+  }
+
+  .page-subtitle {
+    margin: 6px 0 0;
+    font-size: 15px;
+    color: #6b7280;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: #9ca3af;
+    font-size: 15px;
+  }
+
+  /* ── Timeline ────────────────────────────── */
+
+  .timeline {
+    position: relative;
+    padding-left: 80px;
+  }
+
+  /* Vertical line */
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 36px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #d1d5db 0%, #e5e7eb 50%, #f3f4f6 100%);
+    border-radius: 1px;
+  }
+
+  .timeline-ym {
+    position: relative;
+    margin-bottom: 8px;
+  }
+
+  .ym-marker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .ym-dot {
+    position: absolute;
+    left: -47px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #9ca3af;
+    border: 2px solid #eef7ff;
+    box-shadow: 0 0 0 2px #e5e7eb;
+  }
+
+  .ym-label {
+    font-size: 18px;
+    font-weight: 900;
+    color: #111827;
+    letter-spacing: -0.02em;
+  }
+
+  .ym-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 20px;
+  }
+
+  /* ── Cards ────────────────────────────── */
+
+  .card {
+    display: flex;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 4px 18px rgba(31, 41, 55, 0.08);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  .card:hover {
+    box-shadow: 0 6px 24px rgba(31, 41, 55, 0.14);
+    transform: translateY(-1px);
+  }
+
+  .card-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .card-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .card-title {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.4;
+  }
+
+  .card-title a {
+    color: #111827;
+    text-decoration: none;
+  }
+
+  .card-title a:hover {
+    color: #0969da;
+    text-decoration: underline;
+  }
+
+  .card-authors,
+  .card-project {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .meta-tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+
+  .meta-tag.journal {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  .meta-tag.level {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  .meta-tag.if {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  .meta-tag.comp-level {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  .meta-tag.link-tag {
+    background: #f0fdf4;
+    color: #15803d;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .meta-tag.link-tag:hover {
+    background: #dcfce7;
+  }
+
+  /* ── Paper vs Competition accent ────────────── */
+
+  .paper-card {
+    border-left: 3px solid #0969da;
+  }
+
+  .comp-card {
+    border-left: 3px solid #f59e0b;
+  }
+
+  /* ── Mobile ────────────────────────────── */
+
+  @media (max-width: 760px) {
+    .research-page {
+      width: min(100% - 28px, 820px);
+    }
+
+    .timeline {
+      padding-left: 48px;
+    }
+
+    .timeline::before {
+      left: 16px;
+    }
+
+    .ym-dot {
+      left: -36px;
+      width: 12px;
+      height: 12px;
+    }
+
+    .ym-label {
+      font-size: 16px;
+    }
+
+    .card {
+      padding: 12px 14px;
+    }
+
+    .card-title {
+      font-size: 14px;
+    }
+  }
+</style>
