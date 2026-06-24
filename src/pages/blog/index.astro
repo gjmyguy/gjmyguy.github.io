@@ -4,8 +4,6 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
-const base = import.meta.env.BASE_URL;
-
 const posts = (await getCollection('blog')).sort(
 	(a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
 );
@@ -246,7 +244,7 @@ function getTagColor(name: string): { bg: string; text: string } {
 			<div class="post-grid">
 				{posts.map((post) => (
 					<article class="post-card" data-category={post.data.category}>
-						<a class="post-card-link" href={`${base}blog/${post.id}/`}>
+						<a class="post-card-link" href={`/blog/${post.id}/`}>
 							<div class="card-body">
 								<div class="card-top">
 									<span class="card-category">{post.data.category}</span>
