@@ -2,7 +2,7 @@
 title: 'MySQL学习笔记'
 description: 'MySQL相关面试题'
 pubDate: 'Jun 25 2026'
-tags: ['mysql']
+tags: ['sql','关系型数据库']
 category: '数据库'
 ---
 
