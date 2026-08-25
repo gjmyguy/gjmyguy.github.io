@@ -21,13 +21,23 @@ const { nodes } = Astro.props;
 <ul class="folder-tree">
 	{nodes.map((node) => (
 		<li class="folder-node">
-			<button class="tree-filter" type="button" data-folder={node.path}>
-				<span class="tree-chevron" aria-hidden="true">›</span>
-				<span class="folder-mark" aria-hidden="true"></span>
-				<span>{node.name}</span>
-			</button>
+			<div class="tree-row">
+				<button
+					class="tree-toggle"
+					type="button"
+					aria-expanded="true"
+					aria-controls={`folder-${node.path.replaceAll('/', '-')}`}
+					aria-label={`折叠 ${node.name}`}
+				>
+					<span class="tree-chevron" aria-hidden="true">›</span>
+				</button>
+				<button class="tree-filter" type="button" data-folder={node.path}>
+					<span class="folder-mark" aria-hidden="true"></span>
+					<span>{node.name}</span>
+				</button>
+			</div>
 			{(node.posts.length > 0 || node.children.length > 0) && (
-				<div class="tree-children">
+				<div class="tree-children" id={`folder-${node.path.replaceAll('/', '-')}`}>
 					{node.posts.map((post) => (
 						<a class="file-entry" href={`/blog/${post.id}/`}>
 							<span class="file-mark" aria-hidden="true"></span>
@@ -54,11 +64,16 @@ const { nodes } = Astro.props;
 		border-left: 1px solid #dbe3ec;
 	}
 
+	.tree-row {
+		display: flex;
+		align-items: center;
+	}
+
+	.tree-toggle,
 	.tree-filter,
 	.file-entry {
 		display: flex;
 		align-items: center;
-		width: 100%;
 		min-height: 32px;
 		gap: 7px;
 		border: 0;
@@ -74,9 +89,28 @@ const { nodes } = Astro.props;
 		cursor: pointer;
 	}
 
+	.tree-toggle {
+		width: 24px;
+		padding: 5px 0 5px 8px;
+		color: #9ca3af;
+	}
+
+	.tree-toggle:hover {
+		color: #0969da;
+	}
+
+	.tree-filter {
+		flex: 1;
+		width: auto;
+	}
+
 	.tree-filter {
 		color: #111827;
 		font-weight: 800;
+	}
+
+	.file-entry {
+		width: 100%;
 	}
 
 	.tree-filter:hover,
@@ -91,6 +125,8 @@ const { nodes } = Astro.props;
 		color: #9ca3af;
 		font-size: 18px;
 		line-height: 1;
+		transform: rotate(90deg);
+		transition: transform 0.15s ease;
 	}
 
 	.folder-mark,
@@ -132,4 +168,25 @@ const { nodes } = Astro.props;
 		border-bottom: 1.5px solid currentColor;
 		background: #fff;
 	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.tree-chevron {
+			transition: none;
+		}
+	}
 </style>
+
+<script>
+	document.querySelectorAll<HTMLButtonElement>('.tree-toggle').forEach((toggle) => {
+		toggle.addEventListener('click', () => {
+			const expanded = toggle.getAttribute('aria-expanded') === 'true';
+			const targetId = toggle.getAttribute('aria-controls');
+			const target = targetId ? document.getElementById(targetId) : null;
+			const folderName = toggle.parentElement?.querySelector('.tree-filter span:last-child')?.textContent ?? '目录';
+
+			toggle.setAttribute('aria-expanded', String(!expanded));
+			toggle.setAttribute('aria-label', `${expanded ? '展开' : '折叠'} ${folderName}`);
+			if (target) target.hidden = expanded;
+		});
+	});
+</script>
