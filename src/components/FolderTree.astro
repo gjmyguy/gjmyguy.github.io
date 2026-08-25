@@ -1,0 +1,135 @@
+---
+type TreePost = {
+	id: string;
+	data: { title: string };
+};
+
+type FolderNode = {
+	name: string;
+	path: string;
+	children: FolderNode[];
+	posts: TreePost[];
+};
+
+interface Props {
+	nodes: FolderNode[];
+}
+
+const { nodes } = Astro.props;
+---
+
+<ul class="folder-tree">
+	{nodes.map((node) => (
+		<li class="folder-node">
+			<button class="tree-filter" type="button" data-folder={node.path}>
+				<span class="tree-chevron" aria-hidden="true">›</span>
+				<span class="folder-mark" aria-hidden="true"></span>
+				<span>{node.name}</span>
+			</button>
+			{(node.posts.length > 0 || node.children.length > 0) && (
+				<div class="tree-children">
+					{node.posts.map((post) => (
+						<a class="file-entry" href={`/blog/${post.id}/`}>
+							<span class="file-mark" aria-hidden="true"></span>
+							<span>{post.data.title}</span>
+						</a>
+					))}
+					{node.children.length > 0 && <Astro.self nodes={node.children} />}
+				</div>
+			)}
+		</li>
+	))}
+</ul>
+
+<style>
+	.folder-tree {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.tree-children {
+		margin-left: 14px;
+		padding-left: 14px;
+		border-left: 1px solid #dbe3ec;
+	}
+
+	.tree-filter,
+	.file-entry {
+		display: flex;
+		align-items: center;
+		width: 100%;
+		min-height: 32px;
+		gap: 7px;
+		border: 0;
+		border-radius: 6px;
+		padding: 5px 8px;
+		background: transparent;
+		color: #4b5563;
+		font: inherit;
+		font-size: 13px;
+		line-height: 1.35;
+		text-align: left;
+		text-decoration: none;
+		cursor: pointer;
+	}
+
+	.tree-filter {
+		color: #111827;
+		font-weight: 800;
+	}
+
+	.tree-filter:hover,
+	.tree-filter.active,
+	.file-entry:hover {
+		background: #e8f1fb;
+		color: #0969da;
+	}
+
+	.tree-chevron {
+		width: 10px;
+		color: #9ca3af;
+		font-size: 18px;
+		line-height: 1;
+	}
+
+	.folder-mark,
+	.file-mark {
+		position: relative;
+		flex: 0 0 auto;
+		width: 13px;
+		height: 10px;
+		border: 1.5px solid currentColor;
+		border-radius: 2px;
+	}
+
+	.folder-mark::before {
+		content: '';
+		position: absolute;
+		left: -1.5px;
+		top: -4px;
+		width: 6px;
+		height: 4px;
+		border: 1.5px solid currentColor;
+		border-bottom: 0;
+		border-radius: 2px 2px 0 0;
+	}
+
+	.file-mark {
+		width: 11px;
+		height: 13px;
+		border-radius: 2px;
+	}
+
+	.file-mark::after {
+		content: '';
+		position: absolute;
+		right: -1.5px;
+		top: -1.5px;
+		width: 4px;
+		height: 4px;
+		border-left: 1.5px solid currentColor;
+		border-bottom: 1.5px solid currentColor;
+		background: #fff;
+	}
+</style>

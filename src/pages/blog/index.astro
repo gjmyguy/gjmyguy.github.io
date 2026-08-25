@@ -1,15 +1,49 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
+import FolderTree from '../../components/FolderTree.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
 const posts = (await getCollection('blog')).sort(
 	(a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
-);
+).map((post) => ({
+	...post,
+	folderPath: post.id.split('/').slice(0, -1).join('/'),
+}));
 
-// Extract unique categories
-const categories = [...new Set(posts.map((p) => p.data.category))].sort();
+type FolderNode = {
+	name: string;
+	path: string;
+	children: FolderNode[];
+	posts: (typeof posts)[number][];
+};
+
+const folderTree: FolderNode[] = [];
+for (const post of posts) {
+	let currentLevel = folderTree;
+	let currentNode: FolderNode | undefined;
+
+	for (const name of post.folderPath.split('/')) {
+		const path = currentNode ? `${currentNode.path}/${name}` : name;
+		currentNode = currentLevel.find((node) => node.path === path);
+
+		if (!currentNode) {
+			currentNode = { name, path, children: [], posts: [] };
+			currentLevel.push(currentNode);
+		}
+
+		currentLevel = currentNode.children;
+	}
+
+	currentNode?.posts.push(post);
+}
+
+const sortFolderTree = (nodes: FolderNode[]) => {
+	nodes.sort((a, b) => a.name.localeCompare(b.name));
+	nodes.forEach((node) => sortFolderTree(node.children));
+};
+sortFolderTree(folderTree);
 
 const formatDate = (date: Date) =>
 	new Intl.DateTimeFormat('zh-CN', {
@@ -54,37 +88,36 @@ function getTagColor(name: string): { bg: string; text: string } {
 				margin: 0 auto 88px;
 			}
 
-			/* ── Category tabs ────────────────────────────── */
-
-			.category-bar {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 8px;
-				margin-bottom: 20px;
-				padding: 16px 0;
+			.blog-layout {
+				display: grid;
+				grid-template-columns: 230px minmax(0, 1fr);
+				gap: 20px;
+				align-items: start;
 			}
 
-			.cat-tab {
-				padding: 6px 18px;
-				border-radius: 999px;
-				border: none;
-				cursor: pointer;
-				font-size: 14px;
-				font-weight: 700;
-				background: rgba(255, 255, 255, 0.7);
+			.directory-nav {
+				position: sticky;
+				top: 84px;
+				padding: 16px 12px;
+				border: 1px solid #dbe3ec;
+				border-radius: 8px;
+				background: rgba(255, 255, 255, 0.78);
+				box-shadow: 0 8px 24px rgba(31, 41, 55, 0.08);
+				backdrop-filter: blur(12px);
+			}
+
+			.directory-title {
+				margin: 0 8px 10px;
 				color: #6b7280;
-				transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+				font-size: 11px;
+				font-weight: 900;
+				letter-spacing: 0.14em;
+				text-transform: uppercase;
 			}
 
-			.cat-tab:hover {
-				background: rgba(255, 255, 255, 0.95);
-				color: #111827;
-			}
-
-			.cat-tab.active {
-				background: #111827;
-				color: #fff;
-				box-shadow: 0 4px 14px rgba(17, 24, 39, 0.25);
+			.all-filter {
+				margin-bottom: 6px;
+				font-weight: 900;
 			}
 
 			/* ── Post grid ────────────────────────────── */
@@ -215,14 +248,12 @@ function getTagColor(name: string): { bg: string; text: string } {
 					grid-template-columns: 1fr;
 				}
 
-				.category-bar {
-					gap: 6px;
-					margin-bottom: 14px;
+				.blog-layout {
+					grid-template-columns: 1fr;
 				}
 
-				.cat-tab {
-					padding: 5px 14px;
-					font-size: 13px;
+				.directory-nav {
+					position: static;
 				}
 
 				.card-title {
@@ -234,20 +265,23 @@ function getTagColor(name: string): { bg: string; text: string } {
 	<body>
 		<Header />
 		<main class="blog-page">
-			<div class="category-bar">
-				<button class="cat-tab active" data-cat="all">全部</button>
-				{categories.map((cat) => (
-					<button class="cat-tab" data-cat={cat}>{cat}</button>
-				))}
-			</div>
+			<div class="blog-layout">
+				<nav class="directory-nav" aria-label="文章目录">
+					<p class="directory-title">Directory</p>
+					<button class="tree-filter all-filter active" type="button" data-folder="all">
+						<span class="tree-chevron" aria-hidden="true">›</span>
+						<span>全部文章</span>
+					</button>
+					<FolderTree nodes={folderTree} />
+				</nav>
 
-			<div class="post-grid">
+				<div class="post-grid">
 				{posts.map((post) => (
-					<article class="post-card" data-category={post.data.category}>
+					<article class="post-card" data-folder={post.folderPath}>
 						<a class="post-card-link" href={`/blog/${post.id}/`}>
 							<div class="card-body">
 								<div class="card-top">
-									<span class="card-category">{post.data.category}</span>
+									<span class="card-category">{post.folderPath.replaceAll('/', ' / ')}</span>
 								</div>
 								<h3 class="card-title">{post.data.title}</h3>
 								<p class="card-desc">{post.data.description}</p>
@@ -270,25 +304,31 @@ function getTagColor(name: string): { bg: string; text: string } {
 						</a>
 					</article>
 				))}
+				</div>
 			</div>
 		</main>
 
 		<script>
 			document.addEventListener('DOMContentLoaded', () => {
-				const tabs = document.querySelectorAll<HTMLButtonElement>('.cat-tab');
+				const filters = document.querySelectorAll<HTMLButtonElement>('.tree-filter');
 				const cards = document.querySelectorAll<HTMLElement>('.post-card');
 
-				tabs.forEach((tab) => {
-					tab.addEventListener('click', () => {
+				filters.forEach((filter) => {
+					filter.addEventListener('click', () => {
 						// Update active tab
-						tabs.forEach((t) => t.classList.remove('active'));
-						tab.classList.add('active');
+						filters.forEach((item) => item.classList.remove('active'));
+						filter.classList.add('active');
 
-						const cat = tab.dataset.cat;
+						const folder = filter.dataset.folder;
 
 						// Filter cards
 						cards.forEach((card) => {
-							if (cat === 'all' || card.dataset.category === cat) {
+							const cardFolder = card.dataset.folder ?? '';
+							if (
+								folder === 'all' ||
+								cardFolder === folder ||
+								cardFolder.startsWith(`${folder}/`)
+							) {
 								card.style.display = '';
 							} else {
 								card.style.display = 'none';

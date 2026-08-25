@@ -3,7 +3,6 @@ title: 'Agent基础学习笔记'
 description: 'Agent基础相关面试题'
 pubDate: 'Jun 25 2026'
 tags: ['agent','LangChain','LangGraph']
-category: 'Agent'
 ---
 
 

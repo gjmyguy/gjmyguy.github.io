@@ -3,7 +3,6 @@ title: 'Python常用API'
 description: '在LeetCode刷题时必会API，掌握可以大大提高刷题效率，包括字符串，列表，元组，字典等常用高频API'
 pubDate: 'Jun 25 2026'
 tags: ['python','基础语法']
-category: 'Python'
 ---
 
 
