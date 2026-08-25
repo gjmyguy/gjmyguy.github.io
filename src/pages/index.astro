@@ -4,7 +4,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
-import bgVideo from '../assets/bg.mp4';
+import bgImage from '../assets/bg.png';
 
 const allPosts = await getCollection('blog');
 const posts = allPosts
@@ -65,9 +65,7 @@ function getTagColor(name: string): { bg: string; text: string } {
     <Header />
 
     <section class="hero">
-      <video class="hero-video" autoplay muted loop playsinline preload="auto" disablepictureinpicture controlslist="nodownload noremoteplayback noplaybackrate">
-        <source src={bgVideo} type="video/mp4" />
-      </video>
+      <img class="hero-image" src={bgImage.src} alt="" />
 
       <div class="hero-overlay"></div>
 
@@ -196,7 +194,7 @@ function getTagColor(name: string): { bg: string; text: string } {
     background: #111827;
   }
 
-  .hero-video {
+  .hero-image {
     position: absolute;
     inset: 0;
     width: 100%;
