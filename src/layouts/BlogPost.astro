@@ -35,6 +35,10 @@ const { title, description, pubDate, updatedDate, category, tags } = Astro.props
 				margin: 0 0 0.5em 0;
 				font-size: 2em;
 			}
+
+			.title :global(hr) {
+				margin: 1em 0;
+			}
 			.date {
 				margin-bottom: 0.5em;
 				color: rgb(var(--gray));
@@ -79,7 +83,7 @@ const { title, description, pubDate, updatedDate, category, tags } = Astro.props
 				box-sizing: border-box;
 				width: min(1180px, calc(100% - 32px));
 				max-width: none;
-				margin: 24px auto 64px;
+				margin: 8px auto 48px;
 				padding: 28px 64px 56px;
 				border: 1px solid #e5eaf0;
 				border-radius: 8px;
@@ -102,7 +106,7 @@ const { title, description, pubDate, updatedDate, category, tags } = Astro.props
 				font-size: 1.55rem;
 			}
 
-			.prose :global(h2:first-child) {
+			.prose :global(h2:first-of-type) {
 				margin-top: 0.8em;
 			}
 
