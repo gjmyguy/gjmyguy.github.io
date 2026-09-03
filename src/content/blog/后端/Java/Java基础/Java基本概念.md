@@ -25,7 +25,7 @@ tags: ['Java', '基础概念']
 
 它们的包含关系可以简单表示为：
 
-<img src="../../../../assets/blog/Java/Java基础/Java基本概念/1.png" alt="JVM JDK JRE relation" />
+![JVM、JDK、JRE 三者关系](../../../../../assets/blog/Java/Java基础/Java基本概念/1.png)
 
 ```text
 JDK ⊃ JRE ⊃ JVM
